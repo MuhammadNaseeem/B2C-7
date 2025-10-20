@@ -1,11 +1,24 @@
-venv/
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 *.sqlite3
-*.log
-.env
+
+# Virtual environment
+venv/
+env/
+
+# Static files
 staticfiles/
+
+# Media/uploads
+media/
+
+# VS Code
+.vscode/
+
+# Mac/Linux
+.DS_Store
 
 

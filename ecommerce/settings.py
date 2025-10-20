@@ -2,6 +2,9 @@ from pathlib import Path
 from decouple import config, Csv
 import dj_database_url
 
+# ----------------------------
+# Base directory
+# ----------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ----------------------------
@@ -9,11 +12,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ----------------------------
 SECRET_KEY = config('DJANGO_SECRET_KEY')
 DEBUG = config('DEBUG', cast=bool)
+
+# Use comma-separated list in .env or Railway secrets
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', cast=Csv())
 
 # ----------------------------
-# Applications
+# Installed apps
 # ----------------------------
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -32,6 +37,9 @@ INSTALLED_APPS = [
     'orders',
 ]
 
+# ----------------------------
+# Middleware
+# ----------------------------
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # For static files in production
@@ -66,9 +74,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'ecommerce.wsgi.application'
 
 # ----------------------------
-# Database: SQLite locally, PostgreSQL on Railway
+# Database
 # ----------------------------
 if DEBUG:
+    # Local development
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -76,6 +85,7 @@ if DEBUG:
         }
     }
 else:
+    # Production (Railway PostgreSQL)
     DATABASES = {
         'default': dj_database_url.config(default=config('DATABASE_URL'))
     }
@@ -99,7 +109,7 @@ USE_I18N = True
 USE_TZ = True
 
 # ----------------------------
-# Static & Media
+# Static & media
 # ----------------------------
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -123,7 +133,7 @@ LOGOUT_REDIRECT_URL = "accounts:login"
 CART_SESSION_ID = 'cart'
 
 # ----------------------------
-# Email
+# Email (Gmail)
 # ----------------------------
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = config('EMAIL_HOST')
@@ -142,9 +152,9 @@ STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
 # ----------------------------
 # PayPal
 # ----------------------------
-PAYPAL_MODE = config('PAYPAL_MODE')
-PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID')
-PAYPAL_CLIENT_SECRET = config('PAYPAL_CLIENT_SECRET')
+PAYPAL_MODE = config('PAYPAL_MODE', default='sandbox')
+PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID', default='')
+PAYPAL_CLIENT_SECRET = config('PAYPAL_CLIENT_SECRET', default='')
 
 # ----------------------------
 # Production security

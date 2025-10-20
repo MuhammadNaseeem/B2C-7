@@ -16,6 +16,11 @@ from cart.cart import Cart
 from .models import Order, OrderItem, ShippingAddress
 from .utils import send_order_email
 
+def orders_home(request):
+    return redirect('orders:checkout')
+
+
+
 # -------------------- PAYMENT KEYS --------------------
 stripe.api_key = settings.STRIPE_SECRET_KEY
 

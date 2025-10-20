@@ -21,4 +21,7 @@ media/
 # Mac/Linux
 .DS_Store
 
+# Environment variables
+.env
+
 

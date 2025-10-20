@@ -1,40 +1,11 @@
-# Python
+venv/
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
 *.pyd
-*.so
-
-# Virtual environments
-venv/
-env/
-.venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Django stuff
+*.sqlite3
 *.log
-*.pot
-*.pyc
-db.sqlite3
-media/
-staticfiles/
-
-# VSCode / PyCharm
-.vscode/
-.idea/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Environment files
 .env
-.env.local
-.env.*.local
-
-# Migrations cache (optional)
-*/migrations/__pycache__/
+staticfiles/
 
 

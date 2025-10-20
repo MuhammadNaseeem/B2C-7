@@ -1,29 +1,26 @@
+from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
-from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
-from decimal import Decimal
+from django.template.loader import render_to_string, get_template
+from django.contrib.admin.views.decorators import staff_member_required
+from django.conf import settings
+
 import stripe
 import paypalrestsdk
 from xhtml2pdf import pisa
-from django.template.loader import render_to_string, get_template
 
 from cart.cart import Cart
 from .models import Order, OrderItem, ShippingAddress
 from .utils import send_order_email
 
-from django.core.mail import EmailMultiAlternatives
-from django.template.loader import render_to_string
-from django.conf import settings
-
-
 # -------------------- PAYMENT KEYS --------------------
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 paypalrestsdk.configure({
-    "mode": "sandbox",
+    "mode": "sandbox",  # Change to "live" for production
     "client_id": settings.PAYPAL_CLIENT_ID,
     "client_secret": settings.PAYPAL_CLIENT_SECRET,
 })
@@ -64,16 +61,10 @@ def checkout(request):
 # -------------------- CHECKOUT SUCCESS --------------------
 @login_required
 def checkout_success(request):
-    """
-    This view is used for displaying order confirmation after
-    payment via Stripe, PayPal, or COD.
-    """
-    # Get the latest order for the user
     order = Order.objects.filter(user=request.user).order_by("-created_at").first()
     if not order:
         messages.error(request, "No order found.")
         return redirect("cart:cart_detail")
-
     return render(request, "orders/checkout_success.html", {"order": order})
 
 
@@ -184,7 +175,6 @@ def paypal_success(request):
             )
 
         cart.clear()
-        # Send email
         send_order_email(order, "orders/emails/order_placed.html", "Your Order has been Placed!")
         messages.success(request, "Payment successful via PayPal!")
         return redirect("orders:checkout_success")
@@ -248,6 +238,7 @@ def download_invoice(request, order_id):
     pisa.CreatePDF(html, dest=response)
     return response
 
+
 def generate_invoice_pdf(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
     template_path = 'orders/invoice.html'
@@ -266,8 +257,6 @@ def generate_invoice_pdf(request, order_id):
 
 
 # -------------------- ADMIN UPDATE ORDER STATUS --------------------
-from django.contrib.admin.views.decorators import staff_member_required
-
 @staff_member_required
 def update_order_status(request, order_id, status):
     order = get_object_or_404(Order, id=order_id)
@@ -275,77 +264,5 @@ def update_order_status(request, order_id, status):
         order.status = status
         order.save()
     return redirect("admin:orders_order_change", order.id)
-
-
-
-from django.shortcuts import render, redirect
-from django.urls import reverse
-from decimal import Decimal
-from paypalcheckoutsdk.orders import OrdersCreateRequest, OrdersCaptureRequest
-from paypalcheckoutsdk.core import PayPalHttpClient, SandboxEnvironment
-
-# PayPal sandbox credentials
-CLIENT_ID = "YOUR_PAYPAL_CLIENT_ID"
-CLIENT_SECRET = "YOUR_PAYPAL_CLIENT_SECRET"
-
-environment = SandboxEnvironment(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
-paypal_client = PayPalHttpClient(environment)
-
-
-def create_paypal_payment(request):
-    # Calculate total amount dynamically from the user's cart
-    cart = request.session.get("cart", {})  # Assuming cart stored in session
-    total_amount = sum(Decimal(item['price']) * item['quantity'] for item in cart.values())
-    
-    if total_amount <= 0:
-        return redirect('orders:checkout')
-
-    request_order = OrdersCreateRequest()
-    request_order.prefer("return=representation")
-    request_order.request_body(
-        {
-            "intent": "CAPTURE",
-            "purchase_units": [
-                {
-                    "amount": {
-                        "currency_code": "USD",
-                        "value": str(total_amount)
-                    }
-                }
-            ],
-            "application_context": {
-                "return_url": request.build_absolute_uri(reverse('orders:paypal_success')),
-                "cancel_url": request.build_absolute_uri(reverse('orders:checkout'))
-            }
-        }
-    )
-
-    try:
-        response = paypal_client.execute(request_order)
-        for link in response.result.links:
-            if link.rel == "approve":
-                return redirect(link.href)
-    except Exception as e:
-        return render(request, "orders/paypal_error.html", {"error": str(e)})
-
-
-def paypal_success(request):
-    token = request.GET.get("token")  # PayPal returns token
-    if token:
-        # Capture the payment
-        request_capture = OrdersCaptureRequest(token)
-        request_capture.request_body({})
-        try:
-            capture_response = paypal_client.execute(request_capture)
-            # Optional: Save order to DB here
-            return render(request, "orders/paypal_success.html", {"capture": capture_response.result})
-        except Exception as e:
-            return render(request, "orders/paypal_error.html", {"error": str(e)})
-    return redirect('orders:checkout')
-
-
-def orders_home(request):
-    # For example, show a list of user’s orders or redirect to checkout
-    return redirect('orders:checkout')
 
 
